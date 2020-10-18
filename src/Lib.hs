@@ -1,9 +1,9 @@
 module Lib
     ( someFunc,
-      produce,
-      p1,
-      p2,
-      consume
+      produce1,
+      consume1,
+      consume2,
+      chainCPS
     ) where
 
 someFunc :: IO ()
@@ -19,19 +19,20 @@ someFunc = putStrLn "someFunc"
 --
 --
 -- runCoroutine :: (a, b) -> Either (
-type Coroutine s = s -> (s -> (s, s -> s)) -> (s, s -> s)
+-- coroutine type is a restricted continuation in our case
+type Coroutine s = s -> (s -> s) -> s
 
---produce :: Coroutine [Integer]
-produce ((x:xs), k0) k1 = k0 ((x:(x:xs)), k1)
+produce1 :: [Integer] -> ([Integer] -> [Integer]) -> [Integer]
+produce1 (x:xs) k = k (1:(x:xs))
 
---p1 :: Coroutine [Integer]
-p1 ((x:xs), k0) k1 = k0 (xs, k1)
+consume1 :: [Integer] -> ([Integer] -> [Integer]) -> [Integer]
+consume1 [] _ = []
+consume1 (x:xs) k = k (xs)
 
---p2 :: Coroutine [Integer]
-p2 ((x:xs), k0) k1 = k0 ((1:xs), k1)
+consume2 :: [Integer] -> ([Integer] -> [Integer]) -> [Integer]
+consume2 [] _ = []
+consume2 (_:[]) _ = []
+consume2 (_:(_:xs)) k = k (xs)
 
-consume = id
--- consume (s, k) = k ([2 .. 3], (\(x, k2) -> k2 ([1 .. 5], id)))
---
-
-
+chainCPS :: ((a -> r) -> r) -> (a -> ((b -> r) -> r)) -> ((b -> r) -> r)
+chainCPS s f = \k -> s $ \x -> f x $ k
